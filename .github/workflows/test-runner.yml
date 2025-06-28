@@ -29,9 +29,11 @@ jobs:
           paths: results.xml
         
       - name: Upload Pytest Test Results
-        uses: action/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         if: success() || failure()
-        path: |
-            results.xml
-            report.html
-            assets
+        with:
+            name: test-results
+        paths: |
+                results.xml
+                report.html
+                assets
