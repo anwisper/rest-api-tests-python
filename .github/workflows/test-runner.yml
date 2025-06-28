@@ -23,7 +23,7 @@ jobs:
              pytest -s tests/part_01/test_users.py --junitxml=results.xml --html=report.html
 
       - name: Create Test Summary
-        uses: test-summary/action@dist
+        uses: test-summary/actions@dist
         if: success() || failure()
         with:
           paths: results.xml
@@ -33,7 +33,7 @@ jobs:
         if: success() || failure()
         with:
             name: test-results
-        paths: |
+            paths: |
                 results.xml
                 report.html
                 assets
