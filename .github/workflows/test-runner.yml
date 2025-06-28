@@ -21,7 +21,7 @@ jobs:
       - name: Set Up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '${{ github.event.inputs.python_version }}'
+            python-version: '${{ github.event.inputs.python_version }}'
 
       - name: Run Tests
         run: |
@@ -35,14 +35,45 @@ jobs:
         uses: test-summary/action@dist
         if: success() || failure()
         with:
-          path: results.xml
+            paths: results.xml
         
       - name: Upload Pytest Test Results
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
             name: test-results
-            path: |
+            paths: |
                 results.xml
                 report.html
                 assets
+
+      - name: Notify Slack - Build Status
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+                SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+                SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+                SLACK_MESSAGE: |
+                  ${{ job.status == 'success' && ':white_check_mark: Python Tests completed successfully' || ':x: Python Tests failed' }}
+                  on branch *${{ github.ref_name }}* by *${{ github.actor }}*.
+                  Details: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View on GitHub>
+                SLACK_TITLE: "Build Status: ${{ job.status }}"
+      - name: Send Build Status Email
+        uses: dawidd6/action-send-mail@v3
+        if: always()
+        with:
+                server_address: ${{ secrets.SMTP_SERVER }}
+                server_port: ${{ secrets.SMTP_PORT }}
+                username: ${{ secrets.SMTP_USERNAME }}
+                password: ${{ secrets.SMTP_PASSWORD }}
+                subject: "${{ job.status == 'success' && ':white_check_mark: Build Succeeded' || ':x: Build Failed' }} - ${{ github.repository }}"
+                html_body: >
+                  <!DOCTYPE html><html><body>
+                  <h2>${{ job.status == 'success' && ':white_check_mark: Build Succeeded' || ':x: Build Failed' }}</h2>
+                  <p>Repository: <b>${{ github.repository }}</b></p>
+                  <p>Commit: <b>${{ github.sha }}</b></p>
+                  <p>Branch: <b>${{ github.ref_name }}</b></p>
+                  <p>Check the details on <a href="${{ github.server_url }}/actions">GitHub Actions</a>.</p>
+                  </body></html>
+                to: ${{ secrets.RECIPIENT_EMAIL }}
+                from: ${{ secrets.SMTP_USERNAME }}
